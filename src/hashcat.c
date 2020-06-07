@@ -113,7 +113,6 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
   /**
    * Update attack-mode specific stuff based on mask
    */
-
   if (mask_ctx_update_loop (hashcat_ctx) == -1) return 0;
 
   /**

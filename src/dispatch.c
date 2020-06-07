@@ -414,7 +414,6 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     #endif
 
     // attack modes from here
-
     if (attack_mode == ATTACK_MODE_STRAIGHT)
     {
       char *dictfile = straight_ctx->dict;

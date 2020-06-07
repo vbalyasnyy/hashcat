@@ -37,6 +37,72 @@ static const u32 full80 = 0x80808080;
 
 static double TARGET_MSEC_PROFILE[4] = { 2, 12, 96, 480 };
 
+void print_dev(hc_device_param_t *device_param) {
+	printf("[0] %p[%ld]\n", &device_param->opencl_d_pws_buf, device_param->size_pws);
+//	uint32_t **pw_ptr = (uint32_t**)device_param->opencl_d_pws_buf;
+/*
+	for (unsigned i = 0; i < device_param->size_pws; i++) {
+		printf("pw_len = %d\n", pw_ptr[i][64]);
+	}
+*/
+	printf("[1] %p\n", &device_param->opencl_d_rules_c);
+	for (int i = 0; i < 1 /*device_param->size_rules_c*/; i++) {
+		printf("%s\n", (char*)&device_param->opencl_d_rules_c);
+	}
+
+	printf("[1] size_pws=%ld\n", device_param->size_pws);
+
+	printf("[24] bitmap_mask=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[25] bitmap_shift1=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[26] bitmap_shift2=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[27] salt_pos=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[28] loop_pos=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[29] loop_cnt=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[30] il_cnt=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[31] digests_cnt%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[32] digests_offset=%d\n", *((uint32_t*)device_param->kernel_params[34]));
+	printf("[33] combs_mode=%d\n", *((uint32_t*)device_param->kernel_params[33]));
+	printf("[34] gid_max=%ld\n", *((uint64_t*)device_param->kernel_params[34]));
+	/*
+      device_param->kernel_params[ 0] = NULL; // &device_param->opencl_d_pws_buf;
+      device_param->kernel_params[ 1] = &device_param->opencl_d_rules_c;
+      device_param->kernel_params[ 2] = &device_param->opencl_d_combs_c;
+      device_param->kernel_params[ 3] = &device_param->opencl_d_bfs_c;
+      device_param->kernel_params[ 4] = NULL; // &device_param->opencl_d_tmps;
+      device_param->kernel_params[ 5] = NULL; // &device_param->opencl_d_hooks;
+      device_param->kernel_params[ 6] = &device_param->opencl_d_bitmap_s1_a;
+      device_param->kernel_params[ 7] = &device_param->opencl_d_bitmap_s1_b;
+      device_param->kernel_params[ 8] = &device_param->opencl_d_bitmap_s1_c;
+      device_param->kernel_params[ 9] = &device_param->opencl_d_bitmap_s1_d;
+      device_param->kernel_params[10] = &device_param->opencl_d_bitmap_s2_a;
+      device_param->kernel_params[11] = &device_param->opencl_d_bitmap_s2_b;
+      device_param->kernel_params[12] = &device_param->opencl_d_bitmap_s2_c;
+      device_param->kernel_params[13] = &device_param->opencl_d_bitmap_s2_d;
+      device_param->kernel_params[14] = &device_param->opencl_d_plain_bufs;
+      device_param->kernel_params[15] = &device_param->opencl_d_digests_buf;
+      device_param->kernel_params[16] = &device_param->opencl_d_digests_shown;
+      device_param->kernel_params[17] = &device_param->opencl_d_salt_bufs;
+      device_param->kernel_params[18] = &device_param->opencl_d_esalt_bufs;
+      device_param->kernel_params[19] = &device_param->opencl_d_result;
+      device_param->kernel_params[20] = &device_param->opencl_d_extra0_buf;
+      device_param->kernel_params[21] = &device_param->opencl_d_extra1_buf;
+      device_param->kernel_params[22] = &device_param->opencl_d_extra2_buf;
+      device_param->kernel_params[23] = &device_param->opencl_d_extra3_buf;
+
+    device_param->kernel_params[24] = &device_param->kernel_params_buf32[24];
+    device_param->kernel_params[25] = &device_param->kernel_params_buf32[25];
+    device_param->kernel_params[26] = &device_param->kernel_params_buf32[26];
+    device_param->kernel_params[27] = &device_param->kernel_params_buf32[27];
+    device_param->kernel_params[28] = &device_param->kernel_params_buf32[28];
+    device_param->kernel_params[29] = &device_param->kernel_params_buf32[29];
+    device_param->kernel_params[30] = &device_param->kernel_params_buf32[30];
+    device_param->kernel_params[31] = &device_param->kernel_params_buf32[31];
+    device_param->kernel_params[32] = &device_param->kernel_params_buf32[32];
+    device_param->kernel_params[33] = &device_param->kernel_params_buf32[33];
+    device_param->kernel_params[34] = &device_param->kernel_params_buf64[34];
+*/
+}
+
 static bool is_same_device (const hc_device_param_t *src, const hc_device_param_t *dst)
 {
   if (src->pcie_bus      != dst->pcie_bus)      return false;
@@ -429,6 +495,8 @@ static bool read_kernel_binary (hashcat_ctx_t *hashcat_ctx, const char *kernel_f
 {
   HCFILE fp;
 
+  //printf("VVV %s:%d %s\n", __func__, __LINE__, kernel_file);
+
   if (hc_fopen (&fp, kernel_file, "rb") == true)
   {
     struct stat st;
@@ -566,10 +634,12 @@ void generate_source_kernel_filename (const bool slow_candidates, const u32 atta
       snprintf (source_file, 255, "%s/OpenCL/m%05d-pure.cl", shared_dir, (int) kern_type);
     }
   }
+  printf("VVV %s:%d source %s\n", __func__, __LINE__, source_file);
 }
 
 void generate_cached_kernel_filename (const bool slow_candidates, const u32 attack_exec, const u32 attack_kern, const u32 kern_type, const u32 opti_type, char *profile_dir, const char *device_name_chksum, char *cached_file)
 {
+
   if (opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
   {
     if (attack_exec == ATTACK_EXEC_INSIDE_KERNEL)
@@ -620,6 +690,7 @@ void generate_cached_kernel_filename (const bool slow_candidates, const u32 atta
       snprintf (cached_file, 255, "%s/kernels/m%05d-pure.%s.kernel", profile_dir, (int) kern_type, device_name_chksum);
     }
   }
+  printf("VVV %s:%d source %s\n", __func__, __LINE__, cached_file);
 }
 
 void generate_source_kernel_shared_filename (char *shared_dir, char *source_file)
@@ -2204,6 +2275,8 @@ int hc_clEnqueueNDRangeKernel (hashcat_ctx_t *hashcat_ctx, cl_command_queue comm
     return -1;
   }
 
+//printf("VVV %s:%d NDRange %p\n", __func__, __LINE__, kernel);
+
   return 0;
 }
 
@@ -2275,6 +2348,8 @@ int hc_clSetKernelArg (hashcat_ctx_t *hashcat_ctx, cl_kernel kernel, cl_uint arg
 
     return -1;
   }
+
+//printf("VVV %s:%d NDRange kernel=%p set [%d] = %p (%ld)\n", __func__, __LINE__, kernel, arg_index, arg_value, arg_size);
 
   return 0;
 }
@@ -2530,7 +2605,6 @@ int hc_clCreateKernel (hashcat_ctx_t *hashcat_ctx, cl_program program, const cha
   OCL_PTR *ocl = (OCL_PTR *) backend_ctx->ocl;
 
   cl_int CL_err;
-
   *kernel = ocl->clCreateKernel (program, kernel_name, &CL_err);
 
   if (CL_err != CL_SUCCESS)
@@ -2539,6 +2613,7 @@ int hc_clCreateKernel (hashcat_ctx_t *hashcat_ctx, cl_program program, const cha
 
     return -1;
   }
+//printf("VVV %s:%d %p = %s\n", __func__, __LINE__, kernel, kernel_name);
 
   return 0;
 }
@@ -2905,6 +2980,7 @@ int choose_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, 
     }
     else
     {
+printf("VVV %s:%d run_kernel\n", __func__, __LINE__);
       if (run_kernel (hashcat_ctx, device_param, KERN_RUN_4, pws_cnt, true, fast_iteration) == -1) return -1;
     }
   }
@@ -3500,6 +3576,7 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
 
   kernel_threads = MIN (kernel_threads, device_param->kernel_threads);
 
+printf("VVV %s:%d [35] gid_max = %ld\n", __func__, __LINE__, num);
   device_param->kernel_params_buf64[34] = num;
 
   u64 num_elements = num;
@@ -3611,6 +3688,8 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
       }
     }
 
+printf("VVV %s:%d >>>\n", __func__, __LINE__);
+//print_dev(device_param);
     for (u32 i = 0; i <= 23; i++)
     {
       if (hc_clSetKernelArg (hashcat_ctx, opencl_kernel, i, sizeof (cl_mem), device_param->kernel_params[i]) == -1) return -1;
@@ -3625,6 +3704,7 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
     {
       if (hc_clSetKernelArg (hashcat_ctx, opencl_kernel, i, sizeof (cl_ulong), device_param->kernel_params[i]) == -1) return -1;
     }
+printf("VVV %s:%d <<<\n", __func__, __LINE__);
 
     num_elements = round_up_multiple_64 (num_elements, kernel_threads);
 
@@ -3718,6 +3798,7 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
     if (hc_clGetEventProfilingInfo (hashcat_ctx, opencl_event, CL_PROFILING_COMMAND_END,   sizeof (time_end),   &time_end,   NULL) == -1) return -1;
 
     const double exec_us = (double) (time_end - time_start) / 1000;
+    //printf("VVV %s:%d clWaitForEvents %f usec %f msec\n", __func__, __LINE__, exec_us, exec_us / 1000);
 
     if (device_param->spin_damp > 0)
     {
@@ -4300,6 +4381,10 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
 
     salt_t *salt_buf = &hashes->salts_buf[salt_pos];
 
+printf("VVV %s:%d [27] salt_pos = %d\n", __func__, __LINE__, salt_pos);
+
+printf("VVV %s:%d [31] digests_cnt = %d\n", __func__, __LINE__, salt_buf->digests_cnt);
+printf("VVV %s:%d [32] digests_offset = %d\n", __func__, __LINE__, salt_buf->digests_offset);
     device_param->kernel_params_buf32[27] = salt_pos;
     device_param->kernel_params_buf32[31] = salt_buf->digests_cnt;
     device_param->kernel_params_buf32[32] = salt_buf->digests_offset;
@@ -4688,7 +4773,9 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
         }
       }
 
+//      print_dev(device_param);
       if (choose_kernel (hashcat_ctx, device_param, highest_pw_len, pws_cnt, fast_iteration, salt_pos) == -1) return -1;
+//      print_dev(device_param);
 
       /**
        * benchmark was aborted because too long kernel runtime (slow hashes only)
@@ -7793,6 +7880,8 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     build_options_len += snprintf (build_options_buf + build_options_len, build_options_sz - build_options_len, "-D LOCAL_MEM_TYPE=%d -D VENDOR_ID=%u -D CUDA_ARCH=%u -D HAS_ADD=%u -D HAS_ADDC=%u -D HAS_SUB=%u -D HAS_SUBC=%u -D HAS_VADD=%u -D HAS_VADDC=%u -D HAS_VADD_CO=%u -D HAS_VADDC_CO=%u -D HAS_VSUB=%u -D HAS_VSUBB=%u -D HAS_VSUB_CO=%u -D HAS_VSUBB_CO=%u -D HAS_VPERM=%u -D HAS_VADD3=%u -D HAS_VBFE=%u -D HAS_BFE=%u -D HAS_LOP3=%u -D HAS_MOV64=%u -D HAS_PRMT=%u -D VECT_SIZE=%d -D DEVICE_TYPE=%u -D DGST_R0=%u -D DGST_R1=%u -D DGST_R2=%u -D DGST_R3=%u -D DGST_ELEM=%u -D KERN_TYPE=%u -D ATTACK_EXEC=%u -D ATTACK_KERN=%u -w ", device_param->device_local_mem_type, device_param->opencl_platform_vendor_id, (device_param->sm_major * 100) + (device_param->sm_minor * 10), device_param->has_add, device_param->has_addc, device_param->has_sub, device_param->has_subc, device_param->has_vadd, device_param->has_vaddc, device_param->has_vadd_co, device_param->has_vaddc_co, device_param->has_vsub, device_param->has_vsubb, device_param->has_vsub_co, device_param->has_vsubb_co, device_param->has_vperm, device_param->has_vadd3, device_param->has_vbfe, device_param->has_bfe, device_param->has_lop3, device_param->has_mov64, device_param->has_prmt, device_param->vector_width, (u32) device_param->opencl_device_type, hashconfig->dgst_pos0, hashconfig->dgst_pos1, hashconfig->dgst_pos2, hashconfig->dgst_pos3, hashconfig->dgst_size / 4, kern_type, hashconfig->attack_exec, user_options_extra->attack_kern);
     #endif
 
+    printf("DGST_ELEM=%u\n", hashconfig->dgst_size / 4);
+
     build_options_buf[build_options_len] = 0;
 
     /*
@@ -8040,6 +8129,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       char source_file[256] = { 0 };
 
       generate_source_kernel_filename (user_options->slow_candidates, hashconfig->attack_exec, user_options_extra->attack_kern, kern_type, hashconfig->opti_type, folder_config->shared_dir, source_file);
+//printf("VVV %s:%d source %s\n", __func__, __LINE__, source_file);
 
       if (hc_path_read (source_file) == false)
       {
@@ -8349,6 +8439,25 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       if (hc_clCreateBuffer (hashcat_ctx, device_param->opencl_context, CL_MEM_READ_ONLY,   size_st_digests,         NULL, &device_param->opencl_d_st_digests_buf) == -1) return -1;
       if (hc_clCreateBuffer (hashcat_ctx, device_param->opencl_context, CL_MEM_READ_ONLY,   size_st_salts,           NULL, &device_param->opencl_d_st_salts_buf)   == -1) return -1;
 
+printf("%s:%d [1] pws			size_pws=%ld\n", __func__, __LINE__, device_param->size_pws);
+printf("%s:%d [2] device_param->opencl_d_rules_c	size_rules_c=%ld\n", __func__, __LINE__, size_rules_c);
+printf("%s:%d [3] combs_buf				size_combs=%ld\n", __func__, __LINE__, size_combs);
+printf("%s:%d [4] bfs_buf				size_bfs=%ld\n", __func__, __LINE__, size_bfs);
+printf("%s:%d [5] tmps			size_tmps=%ld\n", __func__, __LINE__, device_param->size_tmps);
+printf("%s:%d [6] hooks			size_hooks=%ld\n", __func__, __LINE__, device_param->size_hooks);
+
+printf("%s:%d [7-14] bitmaps_buf_s1_a		bitmap_size=%d\n", __func__, __LINE__, bitmap_ctx->bitmap_size);
+printf("%s:%d [15] opencl_d_plain_bufs		size_plains=%ld\n", __func__, __LINE__, size_plains);
+printf("%s:%d [16] opencl_d_digests_buf		size_digests=%ld\n", __func__, __LINE__, size_digests);
+printf("%s:%d [17] opencl_d_digests_shown	size_shown=%ld\n", __func__, __LINE__, size_shown);
+printf("%s:%d [18] opencl_d_salt_bufs		size_salts=%ld\n", __func__, __LINE__, size_salts);
+
+printf("%s:%d [20] opencl_d_result		size_results=%ld\n", __func__, __LINE__, size_results);
+printf("%s:%d [21-24] opencl_d_extra0-2_buf	size_extra_buffer/4=%ld\n", __func__, __LINE__, size_extra_buffer / 4);
+
+printf("%s:%d opencl_d_st_digests_buf	size_st_digests=%ld\n", __func__, __LINE__, size_st_digests);
+printf("%s:%d opencl_d_st_salts_buf	size_st_salts=%ld\n", __func__, __LINE__, size_st_salts);
+
       if (hc_clEnqueueWriteBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_bitmap_s1_a, CL_TRUE, 0, bitmap_ctx->bitmap_size, bitmap_ctx->bitmap_s1_a, 0, NULL, NULL) == -1) return -1;
       if (hc_clEnqueueWriteBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_bitmap_s1_b, CL_TRUE, 0, bitmap_ctx->bitmap_size, bitmap_ctx->bitmap_s1_b, 0, NULL, NULL) == -1) return -1;
       if (hc_clEnqueueWriteBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_bitmap_s1_c, CL_TRUE, 0, bitmap_ctx->bitmap_size, bitmap_ctx->bitmap_s1_c, 0, NULL, NULL) == -1) return -1;
@@ -8372,6 +8481,8 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       {
         if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
         {
+printf("%s:%d device_param->opencl_d_rules	size_rules=%ld\n", __func__, __LINE__, size_rules);
+printf("%s:%d [2] device_param->opencl_d_rules_c	size_rules_c=%ld\n", __func__, __LINE__, size_rules_c);
           if (hc_clCreateBuffer (hashcat_ctx, device_param->opencl_context, CL_MEM_READ_ONLY, size_rules,   NULL, &device_param->opencl_d_rules)   == -1) return -1;
           if (hc_clCreateBuffer (hashcat_ctx, device_param->opencl_context, CL_MEM_READ_ONLY, size_rules_c, NULL, &device_param->opencl_d_rules_c) == -1) return -1;
 
@@ -8419,6 +8530,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
      * kernel args
      */
 
+printf("VVV %s:%d setup params start\n", __func__, __LINE__);
     device_param->kernel_params_buf32[24] = bitmap_ctx->bitmap_mask;
     device_param->kernel_params_buf32[25] = bitmap_ctx->bitmap_shift1;
     device_param->kernel_params_buf32[26] = bitmap_ctx->bitmap_shift2;
@@ -8498,6 +8610,8 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
     device_param->kernel_params[32] = &device_param->kernel_params_buf32[32];
     device_param->kernel_params[33] = &device_param->kernel_params_buf32[33];
     device_param->kernel_params[34] = &device_param->kernel_params_buf64[34];
+
+printf("VVV %s:%d setup params stop\n", __func__, __LINE__);
 
     if (user_options->slow_candidates == true)
     {
@@ -10621,7 +10735,7 @@ int backend_session_update_combinator (hashcat_ctx_t *hashcat_ctx)
     if (device_param->skipped_warning == true) continue;
 
     // kernel_params
-
+printf("VVV %s:%d [34] combs_mode = %d\n", __func__, __LINE__, combinator_ctx->combs_mode);
     device_param->kernel_params_buf32[33] = combinator_ctx->combs_mode;
 
     /*

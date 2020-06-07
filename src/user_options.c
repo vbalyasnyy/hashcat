@@ -1645,7 +1645,7 @@ void user_options_preprocess (hashcat_ctx_t *hashcat_ctx)
 
   if (user_options->benchmark == true)
   {
-    user_options->attack_mode         = ATTACK_MODE_BF;
+    user_options->attack_mode         = ATTACK_KERN_BF;//STRAIGHT;
     user_options->hwmon_temp_abort    = 0;
     user_options->increment           = false;
     user_options->left                = false;
@@ -1668,7 +1668,7 @@ void user_options_preprocess (hashcat_ctx_t *hashcat_ctx)
 
     if (user_options->workload_profile_chgd == false)
     {
-      user_options->optimized_kernel_enable = true;
+      user_options->optimized_kernel_enable = false;
       user_options->workload_profile        = 3;
     }
   }
