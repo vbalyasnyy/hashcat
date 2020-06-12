@@ -387,68 +387,6 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   K2[3] = ctx1.opad.h[3];
 }
 
-KERNEL_FQ void m13100_mxx (KERN_ATTR_RULES_ESALT (krb5tgs_t))
-{
-  /**
-   * modifier
-   */
-
-  const u64 lid = get_local_id (0);
-  const u64 gid = get_global_id (0);
-
-  if (gid >= gid_max) return;
-
-  /**
-   * base
-   */
-
-  COPY_PW (pws[gid]);
-
-  LOCAL_VK RC4_KEY rc4_keys[64];
-
-  LOCAL_AS RC4_KEY *rc4_key = &rc4_keys[lid];
-
-  u32 checksum[4];
-
-  checksum[0] = esalt_bufs[digests_offset].checksum[0];
-  checksum[1] = esalt_bufs[digests_offset].checksum[1];
-  checksum[2] = esalt_bufs[digests_offset].checksum[2];
-  checksum[3] = esalt_bufs[digests_offset].checksum[3];
-
-  /**
-   * loop
-   */
-
-  for (u32 il_pos = 0; il_pos < il_cnt; il_pos++)
-  {
-    pw_t tmp = PASTE_PW;
-
-    tmp.pw_len = apply_rules (rules_buf[il_pos].cmds, tmp.i, tmp.pw_len);
-
-    md4_ctx_t ctx;
-
-    md4_init (&ctx);
-
-    md4_update_utf16le (&ctx, tmp.i, tmp.pw_len);
-
-    md4_final (&ctx);
-
-    u32 digest[4];
-
-    u32 K2[4];
-
-    kerb_prepare (ctx.h, checksum, digest, K2);
-
-    if (decrypt_and_check (rc4_key, digest, esalt_bufs[digests_offset].edata2, esalt_bufs[digests_offset].edata2_len, K2, checksum) == 1)
-    {
-      if (atomic_inc (&hashes_shown[digests_offset]) == 0)
-      {
-        mark_hash (plains_buf, d_return_buf, salt_pos, digests_cnt, 0, digests_offset + 0, gid, il_pos, 0, 0);
-      }
-    }
-  }
-}
-
 KERNEL_FQ void m13100_sxx (KERN_ATTR_RULES_ESALT (krb5tgs_t))
 {
   /**
