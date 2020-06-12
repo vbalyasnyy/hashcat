@@ -149,7 +149,7 @@ DECLSPEC u8 rc4_next_16 (LOCAL_AS RC4_KEY *rc4_key, u8 i, u8 j, GLOBAL_AS const 
   return j;
 }
 
-DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS const u32 *edata2, const u32 edata2_len, const u32 *K2, const u32 *checksum)
+DECLSPEC int decrypt (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS const u32 *edata2, const u32 edata2_len, const u32 *K2)
 {
   rc4_init_16 (rc4_key, data);
 
@@ -158,7 +158,7 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
 
   u8 i = 0;
   u8 j = 0;
-
+#if 1
   /*
     8 first bytes are nonce, then ASN1 structs (DER encoding: type-length-data)
 
@@ -182,7 +182,7 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
 
   i = 0;
   j = 0;
-
+#endif
   // init hmac
 
   u32 w0[4];
@@ -274,16 +274,9 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
   md5_hmac_update_64 (&ctx, w0, w1, w2, w3, edata2_left);
 
   md5_hmac_final (&ctx);
-
-  if (checksum[0] != ctx.opad.h[0]) return 0;
-  if (checksum[1] != ctx.opad.h[1]) return 0;
-  if (checksum[2] != ctx.opad.h[2]) return 0;
-  if (checksum[3] != ctx.opad.h[3]) return 0;
-
-  return 1;
 }
 
-DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 *K2)
+DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum)
 {
   // K1=MD5_HMAC(K,1); with 1 encoded as little indian on 4 bytes (01000000 in hexa);
 
@@ -375,76 +368,26 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   md5_hmac_update_64 (&ctx, w0, w1, w2, w3, 16);
 
   md5_hmac_final (&ctx);
-
-  digest[0] = ctx.opad.h[0];
-  digest[1] = ctx.opad.h[1];
-  digest[2] = ctx.opad.h[2];
-  digest[3] = ctx.opad.h[3];
-
-  K2[0] = ctx1.opad.h[0];
-  K2[1] = ctx1.opad.h[1];
-  K2[2] = ctx1.opad.h[2];
-  K2[3] = ctx1.opad.h[3];
 }
 
 KERNEL_FQ void m13100_sxx (KERN_ATTR_RULES_ESALT (krb5tgs_t))
 {
-  /**
-   * modifier
-   */
 
-  const u64 lid = get_local_id (0);
-  const u64 gid = get_global_id (0);
+  // MD4
+  md4_ctx_t ctx;
+  md4_init (&ctx);
+  pw_t tmp = pws[0];
+  md4_update_utf16le (&ctx, tmp.i, tmp.pw_len);
+  md4_final (&ctx);
 
-  if (gid >= gid_max) return;
+  // MD5_HMAC
+  u32 checksum[4] = {0xff, 0xff, 0xff, 0xff};
+  kerb_prepare (ctx.h, checksum);
 
-  /**
-   * base
-   */
-
-  COPY_PW (pws[gid]);
-
+  // DEC
+  u32 digest[4];
+  u32 K2[4];
   LOCAL_VK RC4_KEY rc4_keys[64];
+  decrypt (rc4_keys, digest, esalt_bufs[digests_offset].edata2, esalt_bufs[digests_offset].edata2_len, K2);
 
-  LOCAL_AS RC4_KEY *rc4_key = &rc4_keys[lid];
-
-  u32 checksum[4];
-
-  checksum[0] = esalt_bufs[digests_offset].checksum[0];
-  checksum[1] = esalt_bufs[digests_offset].checksum[1];
-  checksum[2] = esalt_bufs[digests_offset].checksum[2];
-  checksum[3] = esalt_bufs[digests_offset].checksum[3];
-
-  /**
-   * loop
-   */
-
-  for (u32 il_pos = 0; il_pos < il_cnt; il_pos++)
-  {
-    pw_t tmp = PASTE_PW;
-
-    tmp.pw_len = apply_rules (rules_buf[il_pos].cmds, tmp.i, tmp.pw_len);
-
-    md4_ctx_t ctx;
-
-    md4_init (&ctx);
-
-    md4_update_utf16le (&ctx, tmp.i, tmp.pw_len);
-
-    md4_final (&ctx);
-
-    u32 digest[4];
-
-    u32 K2[4];
-
-    kerb_prepare (ctx.h, checksum, digest, K2);
-
-    if (decrypt_and_check (rc4_key, digest, esalt_bufs[digests_offset].edata2, esalt_bufs[digests_offset].edata2_len, K2, checksum) == 1)
-    {
-      if (atomic_inc (&hashes_shown[digests_offset]) == 0)
-      {
-        mark_hash (plains_buf, d_return_buf, salt_pos, digests_cnt, 0, digests_offset + 0, gid, il_pos, 0, 0);
-      }
-    }
-  }
 }
