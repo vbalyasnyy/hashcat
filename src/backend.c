@@ -7815,7 +7815,7 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 
     char *device_name_chksum        = (char *) hcmalloc (HCBUFSIZ_TINY);
     char *device_name_chksum_amp_mp = (char *) hcmalloc (HCBUFSIZ_TINY);
-
+/*
     const size_t dnclen = snprintf (device_name_chksum, HCBUFSIZ_TINY, "%d-%d-%d-%u-%s-%s-%s-%d-%u",
       backend_ctx->comptime,
       backend_ctx->cuda_driver_version,
@@ -7835,18 +7835,18 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
       device_param->device_name,
       device_param->opencl_device_version,
       device_param->opencl_driver_version);
-
+*/
     md5_ctx_t md5_ctx;
 
     md5_init   (md5_ctx);
-    md5_update (&md5_ctx, (u32 *) device_name_chksum, dnclen);
-    md5_final  (&md5_ctx);
+    //md5_update (&md5_ctx, (u32 *) device_name_chksum, dnclen);
+    md5_final  (md5_ctx);
 
     snprintf (device_name_chksum, HCBUFSIZ_TINY, "%08x", md5_ctx.h[0]);
 
     md5_init   (md5_ctx);
-    md5_update (&md5_ctx, (u32 *) device_name_chksum_amp_mp, dnclen_amp_mp);
-    md5_final  (&md5_ctx);
+    //md5_update (&md5_ctx, (u32 *) device_name_chksum_amp_mp, dnclen_amp_mp);
+    md5_final  (md5_ctx);
 
     snprintf (device_name_chksum_amp_mp, HCBUFSIZ_TINY, "%08x", md5_ctx.h[0]);
 

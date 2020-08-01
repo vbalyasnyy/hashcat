@@ -12,7 +12,7 @@ exit
 
 COUNT=0
 while [ $COUNT -lt 5 ]; do
-	rm hashcat.dictstat2 hashcat.log hashcat.potfile
+	rm -f hashcat.dictstat2 hashcat.log hashcat.potfile
 	./hashcat -m 13100 test.txt rockyou.txt -d 1 --self-test-disable -n 64 -u 1 --force | grep Speed
 	let COUNT++
 done

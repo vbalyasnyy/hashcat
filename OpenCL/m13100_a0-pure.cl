@@ -209,7 +209,7 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
 
   md5_hmac_ctx_t ctx;
 
-  md5_hmac_init_64 (&ctx, w0, w1, w2, w3);
+  md5_hmac_init_64 (ctx, w0, w1, w2, w3);
 
   int edata2_left;
 
@@ -220,7 +220,7 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
     j = rc4_next_16 (rc4_key, i, j, edata2, w2); i += 16; edata2 += 4;
     j = rc4_next_16 (rc4_key, i, j, edata2, w3); i += 16; edata2 += 4;
 
-    md5_update_64 (&ctx.ipad, w0, w1, w2, w3, 64);
+    md5_update_64 (ctx.ipad, w0, w1, w2, w3, 64);
   }
 
   w0[0] = 0;
@@ -271,9 +271,9 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
     truncate_block_4x4_le_S (w3, edata2_left & 0xf);
   }
 
-  md5_update_64 (&ctx.ipad, w0, w1, w2, w3, edata2_left);
+  md5_update_64 (ctx.ipad, w0, w1, w2, w3, edata2_left);
 
-  md5_hmac_final (&ctx);
+  md5_hmac_final (ctx);
 
   if (checksum[0] != ctx.opad.h[0]) return 0;
   if (checksum[1] != ctx.opad.h[1]) return 0;
@@ -311,7 +311,7 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
 
   md5_hmac_ctx_t ctx1;
 
-  md5_hmac_init_64 (&ctx1, w0, w1, w2, w3);
+  md5_hmac_init_64 (ctx1, w0, w1, w2, w3);
 
   w0[0] = 2;
   w0[1] = 0;
@@ -330,9 +330,9 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   w3[2] = 0;
   w3[3] = 0;
 
-  md5_update_64 (&ctx1.ipad, w0, w1, w2, w3, 4);
+  md5_update_64 (ctx1.ipad, w0, w1, w2, w3, 4);
 
-  md5_hmac_final (&ctx1);
+  md5_hmac_final (ctx1);
 
   w0[0] = ctx1.opad.h[0];
   w0[1] = ctx1.opad.h[1];
@@ -353,7 +353,7 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
 
   md5_hmac_ctx_t ctx;
 
-  md5_hmac_init_64 (&ctx, w0, w1, w2, w3);
+  md5_hmac_init_64 (ctx, w0, w1, w2, w3);
 
   w0[0] = checksum[0];
   w0[1] = checksum[1];
@@ -372,9 +372,9 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   w3[2] = 0;
   w3[3] = 0;
 
-  md5_update_64 (&ctx.ipad, w0, w1, w2, w3, 16);
+  md5_update_64 (ctx.ipad, w0, w1, w2, w3, 16);
 
-  md5_hmac_final (&ctx);
+  md5_hmac_final (ctx);
 
   digest[0] = ctx.opad.h[0];
   digest[1] = ctx.opad.h[1];
