@@ -7838,13 +7838,13 @@ int backend_session_begin (hashcat_ctx_t *hashcat_ctx)
 
     md5_ctx_t md5_ctx;
 
-    md5_init   (&md5_ctx);
+    md5_init   (md5_ctx);
     md5_update (&md5_ctx, (u32 *) device_name_chksum, dnclen);
     md5_final  (&md5_ctx);
 
     snprintf (device_name_chksum, HCBUFSIZ_TINY, "%08x", md5_ctx.h[0]);
 
-    md5_init   (&md5_ctx);
+    md5_init   (md5_ctx);
     md5_update (&md5_ctx, (u32 *) device_name_chksum_amp_mp, dnclen_amp_mp);
     md5_final  (&md5_ctx);
 

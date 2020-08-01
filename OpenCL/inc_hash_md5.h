@@ -49,6 +49,11 @@
   a += b;                           \
 }
 
+#define hc_add3_S(a,b,c) (a + b + c)
+#define hc_rotl32_S(a,n) ((a << n) | (a >> (32 - n)))
+
+
+
 typedef struct md5_ctx
 {
   u32 h[4];
@@ -69,66 +74,72 @@ typedef struct md5_hmac_ctx
 
 } md5_hmac_ctx_t;
 
-typedef struct md5_ctx_vector
-{
-  u32x h[4];
+void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, u32 *digest);
 
-  u32x w0[4];
-  u32x w1[4];
-  u32x w2[4];
-  u32x w3[4];
+#define append_helper_1x4_S_(r,v,m)	\
+  r[0] |= v & m[0];			\
+  r[1] |= v & m[1];			\
+  r[2] |= v & m[2];			\
+  r[3] |= v & m[3];
 
-  int  len;
+#define set_mark_1x4_S_(v,offset)		\
+{						\
+  const u32 c = (offset & 15) / 4;		\
+  const u32 r = 0xff << ((offset & 3) * 8);	\
+						\
+  v[0] = (c == 0) ? r : 0;			\
+  v[1] = (c == 1) ? r : 0;			\
+  v[2] = (c == 2) ? r : 0;			\
+  v[3] = (c == 3) ? r : 0;			\
+}
 
-} md5_ctx_vector_t;
+#define append_0x80_4x4_S_(w0,w1,w2,w3,offset)	\
+{						\
+  u32 v[4];					\
+						\
+  set_mark_1x4_S_ (v, offset);			\
+						\
+  const u32 offset16 = offset / 16;		\
+						\
+  append_helper_1x4_S_ (w0, ((offset16 == 0) ? 0x80808080 : 0), v);	\
+  append_helper_1x4_S_ (w1, ((offset16 == 1) ? 0x80808080 : 0), v);	\
+  append_helper_1x4_S_ (w2, ((offset16 == 2) ? 0x80808080 : 0), v);	\
+  append_helper_1x4_S_ (w3, ((offset16 == 3) ? 0x80808080 : 0), v);	\
+}
 
-typedef struct md5_hmac_ctx_vector
-{
-  md5_ctx_vector_t ipad;
-  md5_ctx_vector_t opad;
+#define md5_init(ctx)   \
+{                       \
+  ctx.h[0] = MD5M_A;    \
+  ctx.h[1] = MD5M_B;    \
+  ctx.h[2] = MD5M_C;    \
+  ctx.h[3] = MD5M_D;    \
+                        \
+  ctx.w0[0] = 0;        \
+  ctx.w0[1] = 0;        \
+  ctx.w0[2] = 0;        \
+  ctx.w0[3] = 0;        \
+  ctx.w1[0] = 0;        \
+  ctx.w1[1] = 0;        \
+  ctx.w1[2] = 0;        \
+  ctx.w1[3] = 0;        \
+  ctx.w2[0] = 0;        \
+  ctx.w2[1] = 0;        \
+  ctx.w2[2] = 0;        \
+  ctx.w2[3] = 0;        \
+  ctx.w3[0] = 0;        \
+  ctx.w3[1] = 0;        \
+  ctx.w3[2] = 0;        \
+  ctx.w3[3] = 0;        \
+                        \
+  ctx.len = 0;          \
+}
 
-} md5_hmac_ctx_vector_t;
-
-DECLSPEC void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, u32 *digest);
-DECLSPEC void md5_init (md5_ctx_t *ctx);
-DECLSPEC void md5_update_64 (md5_ctx_t *ctx, u32 *w0, u32 *w1, u32 *w2, u32 *w3, const int len);
-DECLSPEC void md5_update (md5_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_update_swap (md5_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_update_utf16le (md5_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_update_utf16le_swap (md5_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_update_global (md5_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_update_global_swap (md5_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_update_global_utf16le (md5_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_update_global_utf16le_swap (md5_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_final (md5_ctx_t *ctx);
-DECLSPEC void md5_hmac_init_64 (md5_hmac_ctx_t *ctx, const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3);
-DECLSPEC void md5_hmac_init (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_init_swap (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_init_global (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_init_global_swap (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_64 (md5_hmac_ctx_t *ctx, u32 *w0, u32 *w1, u32 *w2, u32 *w3, const int len);
-DECLSPEC void md5_hmac_update (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_swap (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_utf16le (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_utf16le_swap (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_global (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_global_swap (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_global_utf16le (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_update_global_utf16le_swap (md5_hmac_ctx_t *ctx, GLOBAL_AS const u32 *w, const int len);
-DECLSPEC void md5_hmac_final (md5_hmac_ctx_t *ctx);
-DECLSPEC void md5_transform_vector (const u32x *w0, const u32x *w1, const u32x *w2, const u32x *w3, u32x *digest);
-DECLSPEC void md5_init_vector (md5_ctx_vector_t *ctx);
-DECLSPEC void md5_init_vector_from_scalar (md5_ctx_vector_t *ctx, md5_ctx_t *ctx0);
-DECLSPEC void md5_update_vector_64 (md5_ctx_vector_t *ctx, u32x *w0, u32x *w1, u32x *w2, u32x *w3, const int len);
-DECLSPEC void md5_update_vector (md5_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_update_vector_swap (md5_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_update_vector_utf16le (md5_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_update_vector_utf16le_swap (md5_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_final_vector (md5_ctx_vector_t *ctx);
-DECLSPEC void md5_hmac_init_vector_64 (md5_hmac_ctx_vector_t *ctx, const u32x *w0, const u32x *w1, const u32x *w2, const u32x *w3);
-DECLSPEC void md5_hmac_init_vector (md5_hmac_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_hmac_update_vector_64 (md5_hmac_ctx_vector_t *ctx, u32x *w0, u32x *w1, u32x *w2, u32x *w3, const int len);
-DECLSPEC void md5_hmac_update_vector (md5_hmac_ctx_vector_t *ctx, const u32x *w, const int len);
-DECLSPEC void md5_hmac_final_vector (md5_hmac_ctx_vector_t *ctx);
-
+void md5_update_64 (md5_ctx_t *ctx, u32 *w0, u32 *w1, u32 *w2, u32 *w3, const int len);
+void md5_update (md5_ctx_t *ctx, const u32 *w, const int len);
+void md5_final (md5_ctx_t *ctx);
+void md5_hmac_init_64 (md5_hmac_ctx_t *ctx, const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3);
+void md5_hmac_init (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
+void md5_hmac_update_64 (md5_hmac_ctx_t *ctx, u32 *w0, u32 *w1, u32 *w2, u32 *w3, const int len);
+void md5_hmac_update (md5_hmac_ctx_t *ctx, const u32 *w, const int len);
+void md5_hmac_final (md5_hmac_ctx_t *ctx);
 #endif
