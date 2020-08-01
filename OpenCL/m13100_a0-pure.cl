@@ -220,7 +220,7 @@ DECLSPEC int decrypt_and_check (LOCAL_AS RC4_KEY *rc4_key, u32 *data, GLOBAL_AS 
     j = rc4_next_16 (rc4_key, i, j, edata2, w2); i += 16; edata2 += 4;
     j = rc4_next_16 (rc4_key, i, j, edata2, w3); i += 16; edata2 += 4;
 
-    md5_update_64 (ctx.ipad, w0, w1, w2, w3, 64);
+    md5_update_64_full (ctx.ipad, w0, w1, w2, w3, 64);
   }
 
   w0[0] = 0;
@@ -330,9 +330,9 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   w3[2] = 0;
   w3[3] = 0;
 
-  md5_update_64 (ctx1.ipad, w0, w1, w2, w3, 4);
+  md5_update_64_nonfull (ctx1.ipad, w0, w1, w2, w3, 4);
 
-  md5_hmac_final (ctx1);
+  md5_hmac_final_68_80 (ctx1);
 
   w0[0] = ctx1.opad.h[0];
   w0[1] = ctx1.opad.h[1];
@@ -372,9 +372,9 @@ DECLSPEC void kerb_prepare (const u32 *K, const u32 *checksum, u32 *digest, u32 
   w3[2] = 0;
   w3[3] = 0;
 
-  md5_update_64 (ctx.ipad, w0, w1, w2, w3, 16);
+  md5_update_64_nonfull (ctx.ipad, w0, w1, w2, w3, 16);
 
-  md5_hmac_final (ctx);
+  md5_hmac_final_80_80 (ctx);
 
   digest[0] = ctx.opad.h[0];
   digest[1] = ctx.opad.h[1];

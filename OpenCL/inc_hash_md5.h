@@ -93,6 +93,22 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
   v[3] = (c == 3) ? r : 0;			\
 }
 
+#define set_mark_1x4_S_4(v,offset)		\
+{						\
+  v[0] = 0;					\
+  v[1] = 0xff << ((4 & 3) * 8);			\
+  v[2] = 0;					\
+  v[3] = 0;					\
+}
+
+#define set_mark_1x4_S_16(v,offset)		\
+{						\
+  v[0] = 0xff << ((16 & 3) * 8);		\
+  v[1] = 0;					\
+  v[2] = 0;					\
+  v[3] = 0;					\
+}
+
 #define append_0x80_4x4_S_(w0,w1,w2,w3,offset)	\
 {						\
   u32 v[4];					\
@@ -105,6 +121,34 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
   append_helper_1x4_S_ (w1, ((offset16 == 1) ? 0x80808080 : 0), v);	\
   append_helper_1x4_S_ (w2, ((offset16 == 2) ? 0x80808080 : 0), v);	\
   append_helper_1x4_S_ (w3, ((offset16 == 3) ? 0x80808080 : 0), v);	\
+}
+
+#define append_0x80_4x4_S_4(w0,w1,w2,w3,offset)	\
+{						\
+  u32 v[4];					\
+						\
+  set_mark_1x4_S_4 (v, offset);			\
+						\
+  const u32 offset16 = offset / 16;		\
+						\
+  append_helper_1x4_S_ (w0, 0x80808080, v);	\
+  append_helper_1x4_S_ (w1, 0, v);		\
+  append_helper_1x4_S_ (w2, 0, v);		\
+  append_helper_1x4_S_ (w3, 0, v);		\
+}
+
+#define append_0x80_4x4_S_16(w0,w1,w2,w3,offset)\
+{						\
+  u32 v[4];					\
+						\
+  set_mark_1x4_S_16 (v, offset);			\
+						\
+  const u32 offset16 = offset / 16;		\
+						\
+  append_helper_1x4_S_ (w0, 0, v);		\
+  append_helper_1x4_S_ (w1, 0x80808080, v);	\
+  append_helper_1x4_S_ (w2, 0, v);		\
+  append_helper_1x4_S_ (w3, 0, v);		\
 }
 
 #define md5_init(ctx)			\
@@ -160,33 +204,87 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
   md5_final (ctx.opad);			\
 }
 
+#define md5_hmac_final_68_80(ctx)	\
+{					\
+  md5_final_68 (ctx.ipad);		\
+					\
+  ctx.opad.w0[0] = ctx.ipad.h[0];	\
+  ctx.opad.w0[1] = ctx.ipad.h[1];	\
+  ctx.opad.w0[2] = ctx.ipad.h[2];	\
+  ctx.opad.w0[3] = ctx.ipad.h[3];	\
+  ctx.opad.w1[0] = 0;			\
+  ctx.opad.w1[1] = 0;			\
+  ctx.opad.w1[2] = 0;			\
+  ctx.opad.w1[3] = 0;			\
+  ctx.opad.w2[0] = 0;			\
+  ctx.opad.w2[1] = 0;			\
+  ctx.opad.w2[2] = 0;			\
+  ctx.opad.w2[3] = 0;			\
+  ctx.opad.w3[0] = 0;			\
+  ctx.opad.w3[1] = 0;			\
+  ctx.opad.w3[2] = 0;			\
+  ctx.opad.w3[3] = 0;			\
+					\
+  ctx.opad.len += 16;			\
+					\
+  md5_final_80 (ctx.opad);		\
+}
+
+#define md5_hmac_final_80_80(ctx)	\
+{					\
+  md5_final_80 (ctx.ipad);		\
+					\
+  ctx.opad.w0[0] = ctx.ipad.h[0];	\
+  ctx.opad.w0[1] = ctx.ipad.h[1];	\
+  ctx.opad.w0[2] = ctx.ipad.h[2];	\
+  ctx.opad.w0[3] = ctx.ipad.h[3];	\
+  ctx.opad.w1[0] = 0;			\
+  ctx.opad.w1[1] = 0;			\
+  ctx.opad.w1[2] = 0;			\
+  ctx.opad.w1[3] = 0;			\
+  ctx.opad.w2[0] = 0;			\
+  ctx.opad.w2[1] = 0;			\
+  ctx.opad.w2[2] = 0;			\
+  ctx.opad.w2[3] = 0;			\
+  ctx.opad.w3[0] = 0;			\
+  ctx.opad.w3[1] = 0;			\
+  ctx.opad.w3[2] = 0;			\
+  ctx.opad.w3[3] = 0;			\
+					\
+  ctx.opad.len += 16;			\
+					\
+  md5_final_80 (ctx.opad);		\
+}
+
 #define md5_final(ctx)						\
 {								\
   const int pos = ctx.len & 63;					\
 								\
   append_0x80_4x4_S_ (ctx.w0, ctx.w1, ctx.w2, ctx.w3, pos);	\
 								\
-  if (pos >= 56)						\
-  {								\
-    md5_transform (ctx.w0, ctx.w1, ctx.w2, ctx.w3, ctx.h);	\
+  ctx.w3[2] = ctx.len * 8;					\
+  ctx.w3[3] = 0;						\
 								\
-    ctx.w0[0] = 0;						\
-    ctx.w0[1] = 0;						\
-    ctx.w0[2] = 0;						\
-    ctx.w0[3] = 0;						\
-    ctx.w1[0] = 0;						\
-    ctx.w1[1] = 0;						\
-    ctx.w1[2] = 0;						\
-    ctx.w1[3] = 0;						\
-    ctx.w2[0] = 0;						\
-    ctx.w2[1] = 0;						\
-    ctx.w2[2] = 0;						\
-    ctx.w2[3] = 0;						\
-    ctx.w3[0] = 0;						\
-    ctx.w3[1] = 0;						\
-    ctx.w3[2] = 0;						\
-    ctx.w3[3] = 0;						\
-  }								\
+  md5_transform (ctx.w0, ctx.w1, ctx.w2, ctx.w3, ctx.h);	\
+}
+
+#define md5_final_68(ctx)					\
+{								\
+  const int pos = ctx.len & 63;					\
+								\
+  append_0x80_4x4_S_4 (ctx.w0, ctx.w1, ctx.w2, ctx.w3, pos);	\
+								\
+  ctx.w3[2] = ctx.len * 8;					\
+  ctx.w3[3] = 0;						\
+								\
+  md5_transform (ctx.w0, ctx.w1, ctx.w2, ctx.w3, ctx.h);	\
+}
+
+#define md5_final_80(ctx)					\
+{								\
+  const int pos = ctx.len & 63;					\
+								\
+  append_0x80_4x4_S_16 (ctx.w0, ctx.w1, ctx.w2, ctx.w3, pos);	\
 								\
   ctx.w3[2] = ctx.len * 8;					\
   ctx.w3[3] = 0;						\
@@ -338,6 +436,69 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
   }								\
 }
 
+#define md5_update_64_full(ctx,W0,W1,W2,W3,LEN)			\
+{								\
+  ctx.len += LEN;						\
+								\
+  ctx.w0[0] = W0[0];						\
+  ctx.w0[1] = W0[1];						\
+  ctx.w0[2] = W0[2];						\
+  ctx.w0[3] = W0[3];						\
+  ctx.w1[0] = W1[0];						\
+  ctx.w1[1] = W1[1];						\
+  ctx.w1[2] = W1[2];						\
+  ctx.w1[3] = W1[3];						\
+  ctx.w2[0] = W2[0];						\
+  ctx.w2[1] = W2[1];						\
+  ctx.w2[2] = W2[2];						\
+  ctx.w2[3] = W2[3];						\
+  ctx.w3[0] = W3[0];						\
+  ctx.w3[1] = W3[1];						\
+  ctx.w3[2] = W3[2];						\
+  ctx.w3[3] = W3[3];						\
+								\
+  md5_transform (ctx.w0, ctx.w1, ctx.w2, ctx.w3, ctx.h);	\
+								\
+  ctx.w0[0] = 0;						\
+  ctx.w0[1] = 0;						\
+  ctx.w0[2] = 0;						\
+  ctx.w0[3] = 0;						\
+  ctx.w1[0] = 0;						\
+  ctx.w1[1] = 0;						\
+  ctx.w1[2] = 0;						\
+  ctx.w1[3] = 0;						\
+  ctx.w2[0] = 0;						\
+  ctx.w2[1] = 0;						\
+  ctx.w2[2] = 0;						\
+  ctx.w2[3] = 0;						\
+  ctx.w3[0] = 0;						\
+  ctx.w3[1] = 0;						\
+  ctx.w3[2] = 0;						\
+  ctx.w3[3] = 0;						\
+}
+
+#define md5_update_64_nonfull(ctx,W0,W1,W2,W3,LEN)		\
+{								\
+  ctx.len += LEN;						\
+								\
+  ctx.w0[0] = W0[0];						\
+  ctx.w0[1] = W0[1];						\
+  ctx.w0[2] = W0[2];						\
+  ctx.w0[3] = W0[3];						\
+  ctx.w1[0] = W1[0];						\
+  ctx.w1[1] = W1[1];						\
+  ctx.w1[2] = W1[2];						\
+  ctx.w1[3] = W1[3];						\
+  ctx.w2[0] = W2[0];						\
+  ctx.w2[1] = W2[1];						\
+  ctx.w2[2] = W2[2];						\
+  ctx.w2[3] = W2[3];						\
+  ctx.w3[0] = W3[0];						\
+  ctx.w3[1] = W3[1];						\
+  ctx.w3[2] = W3[2];						\
+  ctx.w3[3] = W3[3];						\
+}
+
 #define md5_hmac_init_64(ctx,w0,w1,w2,w3)			\
 {								\
   u32 t0[4];							\
@@ -364,7 +525,7 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
 								\
   md5_init (ctx.ipad);						\
 								\
-  md5_update_64 (ctx.ipad, t0, t1, t2, t3, 64);			\
+  md5_update_64_full (ctx.ipad, t0, t1, t2, t3, 64);		\
 								\
   t0[0] = w0[0] ^ 0x5c5c5c5c;					\
   t0[1] = w0[1] ^ 0x5c5c5c5c;					\
@@ -385,7 +546,7 @@ void md5_transform (const u32 *w0, const u32 *w1, const u32 *w2, const u32 *w3, 
 								\
   md5_init (ctx.opad);						\
 								\
-  md5_update_64 (ctx.opad, t0, t1, t2, t3, 64);			\
+  md5_update_64_full (ctx.opad, t0, t1, t2, t3, 64);		\
 }
 
 #endif
