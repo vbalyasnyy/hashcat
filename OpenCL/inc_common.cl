@@ -12,6 +12,49 @@
  * vendor specific (or generic) functions
  */
 
+#if 1
+void
+print_hex(u32 *ptr, u32 len, unsigned *str) {
+        printf("###### %-15s (%3d)", str, len);
+
+        for (u32 w = 0; w < len; w+=1) {
+                if (w%4 == 0)
+                        printf("\n%03d ", w*4);
+
+                u8 *p = (u8*)(ptr + w);
+                printf("%02x%02x%02x%02x ", p[0], p[1], p[2], p[3]);
+
+                if (w == len - 1)
+                        printf("\n");
+        }
+
+        printf("######\n");
+}
+void
+print_hex_oneline(u32 *ptr, u32 len, unsigned *str) {
+        printf("###### %-15s (%3d)", str, len);
+
+        for (u32 w = 0; w < len; w+=1) {
+//                if (w%4 == 0)
+//                        printf("\n%03d ", w*4);
+
+                u8 *p = (u8*)(ptr + w);
+                printf("%02x%02x%02x%02x ", p[0], p[1], p[2], p[3]);
+
+//                if (w == len - 1)
+//                        printf("\n");
+        }
+
+//        printf("######\n");
+        printf("\n");
+}
+#else
+void
+print_hex(u32 *ptr, u32 len, unsigned *str) {}
+void
+print_hex_oneline(u32 *ptr, u32 len, unsigned *str) {}
+#endif
+
 DECLSPEC u8 v8a_from_v32_S (const u32 v32)
 {
   vconv32_t v;

@@ -135,6 +135,9 @@
 #define KERN_ATTR_VECTOR_ESALT(e)         KERN_ATTR (GLOBAL_AS,   CONSTANT_AS const u32x      *words_buf_r,   void, void, e)
 #endif
 
+void print_hex(u32 *ptr, u32 len, unsigned *str);
+void print_hex_oneline(u32 *ptr, u32 len, unsigned *str);
+
 // union based packing
 
 DECLSPEC u8 v8a_from_v32_S   (const u32 v32);
